@@ -19,8 +19,12 @@ matrix_small([[_,_,_], [_,_,_], [_,_,_]]).
 % Acceder a matriz
 at(Mat, Row, Col, Val) :- nth1(Row, Mat, ARow), nth1(Col, ARow, Val).
 
+print_row([]).
+print_row([H|T]) :- var(H), write('_, '), print_row(T). 
+print_row([H|T]) :- ground(H), write(H), write(', '), print_row(T). 
+
 print_matrix([]).
-print_matrix([H|T]) :- write(H), nl, print_matrix(T).
+print_matrix([H|T]) :- write('['), print_row(H), write(']'), nl, print_matrix(T).
 
 
 
@@ -144,3 +148,17 @@ valid(kakuro(Clues), Solution) :-
     solve_clues(Clues, Mat),
     solution(1,1, Mat, Solution),
     print_matrix(Mat).
+
+
+
+
+
+readKakuro(Kakuro) :-
+    seeing(Old),
+    write('Escriba el nombre del archivo:'),
+    nl,
+    read(New),
+    see(New),
+    read(Kakuro),
+    seen,
+    see(Old).
