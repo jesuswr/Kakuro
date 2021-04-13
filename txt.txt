@@ -23,5 +23,4 @@ kakuro([
     clue(6,7,5, [blank(7,7), blank(8,7)]),
     clue(1,8,6, [blank(2,8), blank(3,8), blank(4,8)]),
     clue(6,8,3, [blank(7,8), blank(8,8)])
-
 ]).
