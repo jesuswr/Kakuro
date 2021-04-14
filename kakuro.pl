@@ -1,7 +1,4 @@
-:- use_module(library(apply)).
 :- use_module(library(clpfd)).
-:- use_module(library(aggregate)).
-:- use_module(library(lists)).
 
 % Matriz para unificar los valores con las casillas
 length_list(N, List) :- length(List, N).
@@ -10,8 +7,9 @@ generate_matrix(Cols, Rows, Matrix) :-
     maplist(length_list(Cols), Matrix).
 
 % Acceder a matriz
-at(Mat, Row, Col, Val) :- nth1(Row, Mat, ARow), nth1(Col, ARow, Val).
+at(Mat, Row, Col, Val) :- nth0(Row, Mat, ARow), nth0(Col, ARow, Val).
 
+% Imprimir matriz
 print_row([]).
 print_row([H|T]) :- var(H), write('_, '), print_row(T). 
 print_row([H|T]) :- ground(H), write(H), write(', '), print_row(T). 
@@ -23,7 +21,7 @@ print_matrix([H|T]) :- write('['), print_row(H), write(']'), nl, print_matrix(T)
 
 
 
-% Scar Blanks
+% Sacar Blanks
 get_blanks(clue(_,_,_,Blanks), Blanks).
 
 % Sacar la coordenada mas grande de un blank
@@ -50,7 +48,7 @@ check_direction([blank(X1, Y1) | [blank(X2, Y2) | Blanks]], DX, DY) :-
     check_direction([blank(X2, Y2) | Blanks], DX, DY).
 
 % Chequear que cada clue este bien (der o abajo), le anado blank(X,Y)
-% para que revise que esta justo arriba o a la izq de los blank
+% para que revise que esta justo arriba o a la izq de los blanks
 down_or_right_aux(clue(X, Y, _, Blanks)) :-
     (check_direction([blank(X,Y) | Blanks], 0, 1); 
      check_direction([blank(X,Y) | Blanks], 1, 0)).
@@ -61,15 +59,24 @@ down_or_right([Clue | Clues]) :-
     down_or_right_aux(Clue),
     down_or_right(Clues).
 
-% Sacar las coordenadas de la clue o blank
+% Sacar las coordenadas de clue o blank
 get_xy_clue(clue(X,Y,_,_), xy(X,Y)).
 get_xy_blank(blank(X,Y), xy(X,Y)).
+
+% Calcular cuantas veces aparece un elemento
+ocurrece([], _, 0).
+ocurrece([H | T], H, NewOc) :-
+    ocurrece(T, H, Oc),
+    NewOc is Oc + 1.
+ocurrece([H | T], X, Oc) :-
+    H \= X,
+    ocurrece(T, X, Oc).
 
 % Revisa si no hay mas de 2 clue en una casilla
 max_two_clues(Clues) :-
     maplist(get_xy_clue, Clues, XYs),
-    aggregate(max(C,E),aggregate(count,member(E, XYs),C),max(CNT, _)),
-    CNT =< 2.
+    maplist(ocurrece(XYs), XYs, Counts),
+    max_list([2 | Counts], 2).
 
 % Ver si los clues y blanks tienen alguna pos en comun
 clue_blank_intersect(Clues) :-
@@ -80,18 +87,41 @@ clue_blank_intersect(Clues) :-
     intersection(XYCs, XYBs, L),
     L \= [].
 
-% Revisar que los X Y de la clue sean >= 1
-positive([]).
-positive([clue(X, Y, _, _) | Clues]) :-
-    X >= 1, Y >= 1,
-    positive(Clues).
+% Revisar que los X Y de la clue sean >= 0
+non_negative([]).
+non_negative([clue(X, Y, _, _) | Clues]) :-
+    X >= 0, Y >= 0,
+    non_negative(Clues).
+
+% Direccion en la que va un clue (r es derecha, d es abajo)
+clue_dir_xy(clue(X, Y, _, Blanks), r(X, Y)) :-
+    check_direction([blank(X, Y) | Blanks], 0, 1).
+clue_dir_xy(clue(X, Y, _, Blanks), d(X, Y)) :-
+    check_direction([blank(X, Y) | Blanks], 1, 0).
+
+% Revisa que no hayan clues con misma casilla y direccion
+max_one_xy_dir(Clues) :-
+    maplist(clue_dir_xy, Clues, DXY),
+    maplist(ocurrece(DXY), DXY, Counts),
+    max_list([1 | Counts], 1).
 
 % Revisar que todo lo que necesita cumplir las clues este bien
 valid_clues(Clues) :-
     down_or_right(Clues),
     max_two_clues(Clues),
     not(clue_blank_intersect(Clues)),
-    positive(Clues).
+    non_negative(Clues),
+    max_one_xy_dir(Clues).
+
+
+
+
+
+% Revisar que haya otra solucion
+other_solution(Clues, Max, Mat) :-
+    generate_matrix(Max, Max, Mat2),
+    solve_clues(Clues, Mat2),
+    Mat \= Mat2.
 
 
 
@@ -164,7 +194,7 @@ solve_clues([Clue | Clues], Mat) :-
 solution(_, _, [], []).
 solution(_, Y, [[] | K], Solution) :-
     NewY is Y+1,
-    solution(1, NewY, K, Solution).
+    solution(0, NewY, K, Solution).
 solution(X, Y, [[L | Ls] | K], Solution) :-
     var(L),
     NewX is X + 1,
@@ -182,11 +212,12 @@ solution(X, Y, [[L | Ls] | K], NewSolution) :-
 % Predicado principal
 valid(kakuro(Clues), Solution) :-
     valid_clues(Clues),
-    max_xy(Clues, Max),
+    max_xy(Clues, MaxAux),
+    Max is MaxAux + 1,
     generate_matrix(Max, Max, Mat),
     solve_clues(Clues, Mat),
-    solution(1,1, Mat, Solution),
-    print_matrix(Mat),
+    not(other_solution(Clues, Max, Mat)),
+    solution(0, 0, Mat, Solution),
     !.
 
 
@@ -196,7 +227,7 @@ valid(kakuro(Clues), Solution) :-
 % Leer el kakuro
 readKakuro(Kakuro) :-
     seeing(Old),
-    write('Escriba el nombre del archivo:'),
+    write('Escriba el nombre del archivo (formato = \'archivo\'.):'),
     nl,
     read(New),
     see(New),
