@@ -19,7 +19,7 @@ Para revisar que sea valido hacemos varias cosas:
 2. Revisar que no hayan mas de 2 clues en una casilla: aqui mapeamos los clues a casillas y luego vemos que la que mas veces aparezca no lo haga mas de 2 veces.
 3. Revisar que una casilla no contenga un clue y un blank: aqui mapeamos clues y blanks a predicados xy(X,Y) y revisamos que no se intersecten.
 4. Revisar que las clues no tengan coordenadas negativas.
-5. Revisar que en una casilla no hayan dos clues cuyos blanks vayan a la misma direccion: para esto mapeamos las clues a r(X,Y) o d(X,Y) donde X y Y son las coordenadas y r y d son las direcciones, luego solo vemos si se intersectan.
+5. Revisar que en una casilla no hayan dos clues cuyos blanks vayan a la misma direccion: para esto mapeamos las clues a r(X,Y) o d(X,Y) donde X y Y son las coordenadas y r y d son las direcciones, luego solo vemos si la que mas aparece lo hace mas de 1 vez.
 
 Luego para conseguir una solucion unica hacemos lo siguiente:
 1. Conseguir el numero mas grande en los blank para crear una matriz de tamano Max x Max, que usaremos para unificar sus casillas con los numeros del 1 al 9.
