@@ -1,4 +1,5 @@
 :- use_module(library(clpfd)).
+:- use_module(library(sort)).
 
 % Matriz para unificar los valores con las casillas
 length_list(N, List) :- length(List, N).
@@ -39,6 +40,12 @@ max_xy(Clues, Max) :-
 
 
 
+% Comparador para ordenar blanks
+comp(<, blank(X, Y), blank(X2, Y2)) :-
+    ((X<X2); (X=X2, Y=<Y2)).
+comp(>, blank(X, Y), blank(X2, Y2)) :-
+    ((X>X2); (X=X2, Y>Y2)).
+
 % Chequear que los blank esten en linea
 check_direction([], _, _).
 check_direction([blank(_,_) | []], _, _).
@@ -50,8 +57,9 @@ check_direction([blank(X1, Y1) | [blank(X2, Y2) | Blanks]], DX, DY) :-
 % Chequear que cada clue este bien (der o abajo), le anado blank(X,Y)
 % para que revise que esta justo arriba o a la izq de los blanks
 down_or_right_aux(clue(X, Y, _, Blanks)) :-
-    (check_direction([blank(X,Y) | Blanks], 0, 1); 
-     check_direction([blank(X,Y) | Blanks], 1, 0)).
+    predsort(comp, Blanks, BlanksOrd),
+    (check_direction([blank(X,Y) | BlanksOrd], 0, 1); 
+    check_direction([blank(X,Y) | BlanksOrd], 1, 0)).
 
 % Revisar que cada clue vaya hacia abajo o hacia la derecha
 down_or_right([]).
@@ -95,9 +103,11 @@ non_negative([clue(X, Y, _, _) | Clues]) :-
 
 % Direccion en la que va un clue (r es derecha, d es abajo)
 clue_dir_xy(clue(X, Y, _, Blanks), r(X, Y)) :-
-    check_direction([blank(X, Y) | Blanks], 0, 1).
+    predsort(comp, Blanks, BlanksOrd),
+    check_direction([blank(X, Y) | BlanksOrd], 0, 1).
 clue_dir_xy(clue(X, Y, _, Blanks), d(X, Y)) :-
-    check_direction([blank(X, Y) | Blanks], 1, 0).
+    predsort(comp, Blanks, BlanksOrd),
+    check_direction([blank(X, Y) | BlanksOrd], 1, 0).
 
 % Revisa que no hayan clues con misma casilla y direccion
 max_one_xy_dir(Clues) :-
